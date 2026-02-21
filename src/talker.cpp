@@ -11,33 +11,31 @@ using namespace std::chrono_literals;
 class Talker : public rclcpp::Node
 {
 public:
-    Talker()
-        : Node("talker"), count_(0)
+    Talker() : Node("talker"), count_(0)
     {
-        // Declare parameter with default value
-        this->declare_parameter("message_prefix", "Hello");
-
-        publisher_ = this->create_publisher<std_msgs::msg::String>("/chatter", 10);
+        publisher_ = this->create_publisher<std_msgs::msg::String>("chatter", 10);
         timer_ = this->create_wall_timer(
-            1000ms, std::bind(&Talker::timer_callback, this));
+            1s, std::bind(&Talker::publish_message, this));
     }
 
 private:
-    void timer_callback()
+    void publish_message()
     {
-        std::string prefix = this->get_parameter("message_prefix").as_string();
         auto message = std_msgs::msg::String();
-        message.data = prefix + ": " + std::to_string(count_++);
+        message.data = "ROS2: " + std::to_string(count_);
+
         RCLCPP_INFO(this->get_logger(), "Publishing: '%s'", message.data.c_str());
+
         publisher_->publish(message);
+        count_++;
     }
 
-    rclcpp::TimerBase::SharedPtr timer_;
     rclcpp::Publisher<std_msgs::msg::String>::SharedPtr publisher_;
-    size_t count_;
+    rclcpp::TimerBase::SharedPtr timer_;
+    int count_;
 };
 
-int main(int argc, char *argv[])
+int main(int argc, char * argv[])
 {
     rclcpp::init(argc, argv);
     rclcpp::spin(std::make_shared<Talker>());
